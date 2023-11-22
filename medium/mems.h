@@ -75,16 +75,10 @@ SubChainNode* addToSubChain(MainChainNode* main_node, size_t size, int type) {
     
     new_sub_node->v_ptr = v_ptr; // Set the current virtual address
     v_ptr = v_ptr + size;
-    main_node->sub_chain = new_sub_node->next;
+    main_node->sub_chain = new_sub_node->next; // Corrected this line
     return new_sub_node;
 }
 
-
-void mems_init(){
-    MainChainNode* main_chain_head = NULL;
-    void* v_ptr = (void*)1000;
-
-}
 
 
 /*
