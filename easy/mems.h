@@ -64,14 +64,15 @@ SubChainNode* addToSubChain(MainChainNode* main_node, size_t size, int type) {
     new_sub_node->prev = NULL;
     new_sub_node->v_ptr = v_ptr;
 
-    v_ptr = v_ptr + size;
-
     if (main_node->sub_chain) {
         new_sub_node->next = main_node->sub_chain;
         main_node->sub_chain->prev = new_sub_node;
     }
 
     main_node->sub_chain = new_sub_node;
+    
+    v_ptr = v_ptr + size;
+
     return new_sub_node;
 }
 
