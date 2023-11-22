@@ -75,13 +75,13 @@ SubChainNode* addToSubChain(MainChainNode* main_node, size_t size, int type) {
     new_sub_node->prev = NULL;
 
     if (main_node->sub_chain) {
-        new_sub_node->next = (SubChainNode*)((char*)new_sub_node + size);
+        new_sub_node->next = (SubChainNode*)((char*)main_node->sub_chain + size);
         new_sub_node->next->prev = new_sub_node;
     }
     
     new_sub_node->v_ptr = v_ptr; // Set the current virtual address
     v_ptr = v_ptr + size;
-    main_node->sub_chain = new_sub_node->next; // Corrected this line
+    main_node->sub_chain = new_sub_node->next;
     return new_sub_node;
 }
 
