@@ -1,3 +1,4 @@
+
 #include<stdio.h>
 #include<stdlib.h>
 #include <sys/mman.h>
@@ -23,9 +24,13 @@ typedef struct MainChainNode {
 
 } MainChainNode;
 
+MainChainNode* main_chain_head = NULL;
+void* v_ptr = (void*)1000;
+
+
 
 // Function to add a new node to the main chain
-void addToMainChain(size_t size) {
+MainChainNode* addToMainChain(size_t size) {
     // Calculate the size to allocate based on the page size
     size_t main_node_size = size;
     size_t allocation_size = (main_node_size + PAGE_SIZE - 1) / PAGE_SIZE * PAGE_SIZE;
@@ -52,10 +57,11 @@ void addToMainChain(size_t size) {
 
     main_chain_head = new_main_node;
     new_main_node->sub_chain = (SubChainNode*)(new_main_node + 1);
+    return new_main_node;
 
 }
 
-void addToSubChain(MainChainNode* main_node, size_t size, int type) {
+SubChainNode* addToSubChain(MainChainNode* main_node, size_t size, int type) {
     SubChainNode* new_sub_node = (SubChainNode*)(main_node->sub_chain);
     
     new_sub_node->size = size;
@@ -64,13 +70,14 @@ void addToSubChain(MainChainNode* main_node, size_t size, int type) {
     new_sub_node->prev = NULL;
 
     if (main_node->sub_chain) {
-        new_sub_node->next = (SubChainNode*)((char*)main_node->sub_chain + size);
+        new_sub_node->next = (SubChainNode*)((char*)new_sub_node->sub_chain + size);
         new_sub_node->next->prev = new_sub_node;
     }
     
     new_sub_node->v_ptr = v_ptr; // Set the current virtual address
     v_ptr = v_ptr + size;
     main_node->sub_chain = new_sub_node->next;
+    return new_sub_node;
 }
 
 
@@ -240,29 +247,6 @@ this function free up the memory pointed by our virtual_address and add it to th
 Parameter: MeMS Virtual address (that is created by MeMS) 
 Returns: nothing
 */
-void mems_free(void *v_ptr){
-    MainChainNode* main_node = main_chain_head;
-
-    while (main_node) {
-        SubChainNode* sub_node = main_node->sub_chain;
-
-        while (sub_node) {
-            if (sub_node->v_ptr == v_ptr) {
-                // Mark the segment as free (type 0) and reset the wasted value
-                sub_node->type = 0;
-                main_node->used-=sub_node->size;
-
-                return; // Memory freed and added to the free list
-            }
-
-            sub_node = sub_node->next;
-        }
-        combineFreeSubNodes(main_node);
-
-        main_node = main_node->next;
-    }
-    
-}
 void combineFreeSubNodes(MainChainNode* main_node) {
     SubChainNode* current_sub_node = main_node->sub_chain;
     SubChainNode* next_sub_node;
@@ -275,17 +259,37 @@ void combineFreeSubNodes(MainChainNode* main_node) {
             // Update the v_ptr of the combined sub-node
             current_sub_node->next->v_ptr = current_sub_node->v_ptr + current_sub_node->size;
 
-            // Calculate the physical address of the combined sub-node
-            void* physical_address = mems_get_physical_address(current_sub_node->v_ptr);
-            current_sub_node->next = (SubChainNode*)((char*)physical_address + current_sub_node->size);
-
             // Update the links
-            if (current_sub_node->next) {
-                current_sub_node->next->prev = current_sub_node;
+            if (current_sub_node->next->next) {
+                current_sub_node->next->next->prev = current_sub_node;
             }
             current_sub_node->next = current_sub_node->next->next;
         } else {
             current_sub_node = current_sub_node->next;
         }
+    }
+}
+
+void mems_free(void *v_ptr){
+    MainChainNode* main_node = main_chain_head;
+
+    while (main_node) {
+        SubChainNode* sub_node = main_node->sub_chain;
+
+        while (sub_node) {
+            if (sub_node->v_ptr == v_ptr) {
+                // Mark the segment as free (type 0) and reset the wasted value
+                sub_node->type = 0;
+                main_node->used -= sub_node->size;
+
+                combineFreeSubNodes(main_node);  // Call combineFreeSubNodes after marking the segment as free
+
+                return; // Memory freed and added to the free list
+            }
+
+            sub_node = sub_node->next;
+        }
+
+        main_node = main_node->next;
     }
 }
