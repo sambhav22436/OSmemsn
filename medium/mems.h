@@ -60,6 +60,12 @@ MainChainNode* addToMainChain(size_t size) {
 
 }
 
+void mems_init(){
+    MainChainNode* main_chain_head = NULL;
+    void* v_ptr = (void*)1000;
+
+}
+
 SubChainNode* addToSubChain(MainChainNode* main_node, size_t size, int type) {
     SubChainNode* new_sub_node = (SubChainNode*)(main_node->sub_chain);
     
