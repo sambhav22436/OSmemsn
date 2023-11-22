@@ -225,8 +225,7 @@ void* mems_get(void* v_ptr) {
 
         while (sub_node) {
             if (sub_node->v_ptr == v_ptr) {
-                // Calculate the physical address based on the MeMS layout
-                size_t offset = (size_t)(v_ptr - main_node->sub_chain->v_ptr);
+                size_t offset = (size_t)(v_ptr - sub_node->v_ptr);
                 return (void*)((char*)main_node + offset);
             }
 
@@ -236,7 +235,7 @@ void* mems_get(void* v_ptr) {
         main_node = main_node->next;
     }
 
-    return NULL; // If v_ptr is not found in the MeMS system
+    return NULL;
 }
 
 
