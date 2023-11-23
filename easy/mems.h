@@ -123,12 +123,7 @@ void printSubChain(SubChainNode* sub_chain) {
   }
 
   void mems_print_stats() {
-      if (main_chain_head == NULL) {
-          fprintf(stderr, "Error: Memory system not initialized. Call mems_init() first.\n");
-          fprintf(stderr, "Program exited ...\n");
-          exit(EXIT_FAILURE);
-      }
-
+     
       MainChainNode* main_node = main_chain_head;
       int total_pages_used = 0;
       size_t total_unused_memory = 0;
