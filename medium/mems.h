@@ -115,38 +115,56 @@ void* mems_malloc(size_t size) {
     return NULL;
 }
 
-void mems_print_stats() {
-    MainChainNode* main_node = main_chain_head;
-    int totalPagesUsed = 0;
-    int totalUnusedMemory = 0;
-    int main_count = 0;
+void printSubChain(SubChainNode* sub_chain) {
+      unsigned long start_virtual_address = (unsigned long)sub_chain->v_ptr;
+      unsigned long end_virtual_address = start_virtual_address + sub_chain->size - 1;
 
-    while (main_node) {
-        totalPagesUsed += main_node->psize / PAGE_SIZE;
-        totalUnusedMemory += main_node->psize - main_node->used;
+      printf("<P>[SVA:%lu:EVA:%lu] <-> ", start_virtual_address, end_virtual_address);
+  }
 
-        printf("Main Chain Node: psize=%zu, used=%zu\n",
-            main_node->psize, main_node->used);
+  void mems_print_stats() {
+     
+      MainChainNode* main_node = main_chain_head;
+      int total_pages_used = 0;
+      size_t total_unused_memory = 0;
+      int main_chain_length = 0;
+      int sub_chain_lengths[100]; // Assuming a maximum of 100 sub-chains
 
-        SubChainNode* sub_node = main_node->sub_chain;
-        int segmentCount = 0;
+      printf("MeMS Stats:\n");
 
-        while (sub_node) {
-            printf("  Segment %d: size=%zu, type=%d, v_ptr=%p\n",
-                segmentCount, sub_node->size, sub_node->type, sub_node->v_ptr);
-            sub_node = sub_node->next;
-            segmentCount++;
-        }
+      while (main_node != NULL) {
+          printf("MAIN[%lu:%lu] -> ", (unsigned long)((char*)main_node),
+                (unsigned long)((char*)main_node + main_node->psize - 1));
 
-        printf("Length of subchain %d\n", segmentCount);
-        main_node = main_node->next;
-        main_count++;
-    }
+          SubChainNode* sub_node = main_node->sub_chain;
+          int sub_chain_length = 0;
 
-    printf("Total pages utilized: %d\n", totalPagesUsed);
-    printf("Total unused memory: %d\n", totalUnusedMemory);
-    printf("Length of mainchain %d\n", main_count);
-}
+          while (sub_node != NULL) {
+              printSubChain(sub_node);
+              if (sub_node->type == 0) {
+                  total_unused_memory += sub_node->size;
+              }
+              sub_node = sub_node->next;
+              sub_chain_length++;
+          }
+
+          sub_chain_lengths[main_chain_length] = sub_chain_length;
+          printf("<NULL>\n");
+          main_chain_length++;
+          total_pages_used += main_node->psize / PAGE_SIZE;
+          main_node = main_node->next;
+      }
+
+      printf("Page used: %d\n", total_pages_used);
+      printf("Space unused: %zu\n", total_unused_memory);
+      printf("Main Chain Length: %d\n", main_chain_length);
+      printf("Sub-chain Length array: ");
+
+      for (int i = 0; i < main_chain_length; i++) {
+          printf("%d ", sub_chain_lengths[i]);
+      }
+      printf("\n");
+  }
 
 void* mems_get(void* v_ptr) {
     MainChainNode* main_node = main_chain_head;
@@ -206,6 +224,4 @@ void mems_free(void* v_ptr) {
         main_node = main_node->next;
     }
 }
-
-
 
